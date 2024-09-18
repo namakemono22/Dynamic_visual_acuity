@@ -269,22 +269,21 @@
               clearInterval(ball_move); // 移動を停止
               if(hit_bool)
               {
-                _again.style.visibility = 'visible';
+                setTimeout(function()
+                  {
+                    _again.style.visibility = 'visible';
+                  }, 200);
                 _batter.src = batter[2];
               }else{
                 if(!swing_bool)
                 {
-                  if(level==10)//全クリ
-                  {
-                    level += 1;
-                    _clear.style.visibility = 'visible';
-                    level = 1;
-                  }else{
                     //_next.style.visibility = 'visible';
                     game_click();
-                  }
                 }else{
+                  setTimeout(function()
+                  {
                     _again.style.visibility = 'visible';
+                  }, 200);
                 }
               }
               play_bool = false;
@@ -310,7 +309,10 @@
                 _clear.style.visibility = 'visible';
                 level = 1;
               }else{
-                _next.style.visibility = 'visible';
+                setTimeout(function()
+                  {
+                    _next.style.visibility = 'visible';
+                  }, 200);
               }
               play_bool = false;
           }
