@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>記憶力テスト</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+
+    <style>
+    body
+    {
+      /*background-color: #191970; /* 背景色をダークブルーに設定 */
+      margin: 0; /* デフォルトのマージンを削除 */
+      padding: 0; /* デフォルトのパディングを削除 */
+      background-image: url('aaabbb.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      height: 100vh; /* 画面の高さいっぱいに設定 */
+    }
+    .all
+    {
+      display: flex;
+      width: 95vw;/*見えてる大きさ１００ｖｗに対して*/
+      height: 10vh;
+      justify-content: space-between; /* 要素を両端に配置 */
+    }
+    .canvas_and_timer
+    {
+      display: flex;
+      justify-content: space-evenly; /* 要素を両端に配置 */
+
+      width:80%;
+      height: auto;
+    }
+    .timer
+    {
+      font-size:2em;
+    }
+    #level
+    {
+      font-size:2em;
+    }
+
+    #ootani_and_ball
+    {
+        position: relative; /* 親要素を基準にするための設定 */
+        background-color: lightblue; /* 親要素の背景色（任意*/
+        width: 100%; /* 必要に応じてサイズ指定 */
+        height: 200px; /* 必要に応じてサイズ指定 */
+    }
+    #hit_line
+    {
+      position: absolute;
+      background-color: rgb(2, 187, 27); /* 親要素の背景色（任意*/
+      height: 100%;
+      width: 150px;
+      left: 80%;
+      top: 0;
+    }
+    #ootani
+    {
+      top: 0;
+      position: absolute;
+      left: 0%;
+      height: 200px;
+      width: auto;
+    }
+    #batter
+    {
+      top: 0;
+      position: absolute;
+      left: 85%;
+      height: 200px;
+      width: auto;
+    }
+    #ball
+    {
+      position: absolute;
+      visibility: hidden; /* 初期状態で非表示 */
+      top:40%;
+      left: 0;
+      width: 4%;
+      height: auto;
+      z-index: 10; /* 他の要素よりも前面に配置 */
+    }
+    #start
+    {
+        position: absolute; /* 親要素の上に絶対位置で配置 */
+        width: 20%;
+        height: auto;
+        top: 40%;
+        left:40%;
+        z-index: 15; /* 他の要素よりも前面に配置 */
+    }
+    #again
+    {
+        position: absolute; /* 親要素の上に絶対位置で配置 */
+        visibility: hidden; /* 初期状態で非表示 */
+        width: 20%;
+        height: auto;
+        top: 60%;
+        left:40%;
+        z-index: 15; /* 他の要素よりも前面に配置 */
+    }
+    #next
+    {
+        position: absolute; /* 親要素の上に絶対位置で配置 */
+        visibility: hidden; /* 初期状態で非表示 */
+        width:20%;
+        height: auto;
+        top: 60%;
+        left:40%;
+        z-index: 15; /* 他の要素よりも前面に配置 */
+    }
+    #clear
+    {
+        position: absolute; /* 親要素の上に絶対位置で配置 */
+        visibility: hidden; /* 初期状態で非表示 */
+        width:20%;
+        height: auto;
+        top: 40%;
+        left:40%;
+        z-index: 15; /* 他の要素よりも前面に配置 */
+    }
+
+    #rei
+    {
+      display: flex;
+      justify-content: space-evenly; /* 左右にスペースを均等に配置 */
+      padding: 3%;
+    }
+
+    #ball_ok,#ball_bad
+    {
+      width: 15%;
+      height: auto;
+    }
+    </style>
+    <script defer>
+      "use strict";
+      let level = 1;
+      let start_time = 1;
+      let stayTime = null;//待機時間
+      let first = true;
+      let game_bool = false;
+      let start_timer_func;
+      let ball_func;
+      let _ball = null;
+      let _again = null;
+      let _next = null;
+      let _start = null;
+      let _batter = null;
+      let _clear = null;
+      let _hit_line = null;
+      let speed = 0.5; // 移動速度（%単位）
+      let interval = 10; // 更新間隔（ミリ秒）
+      let ball_position_left = 0; // 初期位置
+      let ball_position_top = 0; // 初期位置
+      let batter = ['batter.png','swing.png','strike.png','hit.png']
+      let play_bool = false;
+      let hit_bool = true;
+      let swing_bool = false;
+
+      let ball_move=null;
+      let hitball_move=null;
+      let rotation = 0;
+
+      // 初期化関数
+      function init()
+      {
+        _ball = document.getElementById('ball');
+        _next = document.getElementById('next');
+        _again = document.getElementById('again');
+        _clear = document.getElementById('clear');
+        _start = document.getElementById('start');
+        _batter = document.getElementById('batter');
+        _hit_line = document.getElementById('hit_line');
+      }
+
+      // スタートするまでのタイマー
+      function stay_tick()
+      {
+        let stay_now = new Date();
+        let stay_elapsed = (stay_now.getTime()-stayTime.getTime())/1000;
+        let aaa = start_time - stay_elapsed;
+        document.getElementById("time").textContent = Math.ceil(aaa);
+        if(aaa<=0)
+        {
+          play_bool = true;
+
+          clearInterval(start_timer_func);
+          ball_start();
+        }
+      }
+
+      function getRandomInt(min, max)
+      {
+          // min以上、max未満の整数を生成
+          return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+
+      function game_click()
+      {
+        document.getElementById('level_count').textContent = `${level}`;
+        game_bool = false;
+        rotation = 0;
+        swing_bool = false;
+        _batter.src = batter[0];
+        ball_position_left = 0;
+        ball_position_top = 40;
+        if(getRandomInt(0, 10)>=4)
+        {
+          hit_bool = true;
+        }else{
+          hit_bool = false;
+        }
+        _ball.style.left = ball_position_left + '%';
+        _ball.style.top = ball_position_top + '%';
+        if(_start)
+        {
+          _start.style.visibility = 'hidden';//「もう１度」消す
+        }
+        if(_again)
+        {
+          _again.style.visibility = 'hidden';//「もう１度」消す
+        }
+        if(_next)
+        {
+          _next.style.visibility = 'hidden';//「もう１度」消す
+        }
+        if(_clear)
+        {
+          _clear.style.visibility = 'hidden';//「もう１度」消す
+        }
+
+        _ball.style.visibility = 'hidden';
+
+        if(!game_bool)//記憶中
+        {
+          stayTime = new Date();
+          // タイマー開始
+          start_timer_func = setInterval(stay_tick, 100);
+        }
+      }
+
+      function ball_start()
+      {
+          // setInterval を使って位置を更新
+          ball_move = setInterval(() => {
+          _ball.style.visibility = 'visible';
+          ball_position_left += speed+(level/7);
+          _ball.style.left = ball_position_left + '%'; // 画像を右に移動
+          if(hit_bool)
+          {
+            rotation -= 16; // 5度回転
+            _ball.style.transform = `rotate(${rotation}deg)`;
+          }else{
+            rotation += 16; // 5度回転
+            _ball.style.transform = `rotate(${rotation}deg)`;
+            if(ball_position_left > 75)
+            {
+              ball_position_top += 5+(level/7);
+              _ball.style.top = ball_position_top + '%'; // 画像を右に移動
+            }
+          }
+          // ボックスの幅を超えたら停止
+          if (ball_position_left > 90)
+          {
+              clearInterval(ball_move); // 移動を停止
+              if(hit_bool)
+              {
+                _again.style.visibility = 'visible';
+                _batter.src = batter[2];
+              }else{
+                if(!swing_bool)
+                {
+                  if(level==10)//全クリ
+                  {
+                    level += 1;
+                    _clear.style.visibility = 'visible';
+                    level = 1;
+                  }else{
+                    //_next.style.visibility = 'visible';
+                    game_click();
+                  }
+                }else{
+                    _again.style.visibility = 'visible';
+                }
+              }
+              play_bool = false;
+          }
+          }, interval);
+      }
+
+      function hit_ball()
+      {
+          // setInterval を使って位置を更新
+          hitball_move = setInterval(() => {
+          ball_position_left -= 5;
+          ball_position_top -= 4;
+          _ball.style.left = ball_position_left + '%'; // 画像を左に移動
+          _ball.style.top = ball_position_top + '%'; // 画像を上に移動
+          // ボックスの幅を超えたら停止
+          if (ball_position_left < -10)
+          {
+              clearInterval(hitball_move); // 移動を停止
+              level += 1;
+              if(level==11)//全クリ
+              {
+                _clear.style.visibility = 'visible';
+                level = 1;
+              }else{
+                _next.style.visibility = 'visible';
+              }
+              play_bool = false;
+          }
+          }, interval);
+      }
+
+      function batter_swing()//クリックしてスイング
+      {
+        if(play_bool)
+        {
+          play_bool = false;
+          swing_bool = true;
+
+          const ball_rect = _ball.getBoundingClientRect();
+          // 右端の座標
+          const ball_right = ball_rect.right;
+          // 左端の座標
+          const ball_left = ball_rect.left;
+          const line_rect = _hit_line.getBoundingClientRect();
+          // 右端の座標
+          const line_right = line_rect.right;
+          // 左端の座標
+          const line_left = line_rect.left;
+
+          if(hit_bool)//当てていい
+          {
+            if((ball_right>=line_left&&ball_right<=line_right)||(ball_left>=line_left&&ball_left<=line_right))//範囲内
+            {
+              clearInterval(ball_move);// 移動を停止
+              _batter.src = batter[3];
+              hit_ball();
+            }else{//範囲外
+              _batter.src = batter[2];
+            }
+          }else{//当てちゃダメ
+              _batter.src = batter[2];
+
+          }
+        }
+      }
+      // クリックイベントをページ全体でリッスン
+      document.addEventListener('mousedown', batter_swing);
+
+    </script>
+  </head>
+  <body onload="init()">
+    <h1 id = "hyouzi" style="text-align: center">大谷</h1>
+      <div class="all">
+        <div class="canvas_and_timer">
+          <div id="level">レベル:<span id="level_count">1</span></div>
+          <div class="timer" style="text-align: center">投げるまで：<span id="time">1</span>秒</div>
+        </div>
+      </div>
+      <img id="again" src="again.png" onmousedown="game_click()">
+      <img id="next" src="next.png" onmousedown="game_click()">
+      <img id="start" src="start.png" onmousedown="game_click()">
+      <img id="clear" src="clear.png" onmousedown="game_click()">
+      <div id="ootani_and_ball">
+        <div id="hit_line"></div>
+        <img id="ootani" src="ootani.png">
+        <img id="ball" src="ball.png">
+        <img id="batter" src="batter.png">
+      </div>
+      <div id="rei">
+        <img id='ball_ok' src="ball_ok.png">
+        <img id="ball_bad" src="ball_bad.png">
+      </div>
+  </body>
+</html>
